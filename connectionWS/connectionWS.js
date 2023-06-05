@@ -1,6 +1,5 @@
-import { aWss } from "../index.js";
-
 let rooms = [];
+
 const connectionWS = async (ws, req) => {
   ws.on("message", (msg) => {
     msg = JSON.parse(msg);
@@ -13,13 +12,34 @@ const connectionWS = async (ws, req) => {
         break;
     }
   });
+  ws.on("close", (code, reason) => {
+    //msg = JSON.parse(msg);
+    rooms.forEach((el) => {
+      console.log(
+        "IF",
+        el.clients.filter((client) => {
+          console.log("NAME", client.name !== reason);
+          client.name !== reason;
+        })
+      );
+      el.clients = el.clients.filter((client) => client.name !== reason);
+      if (el.clients.length) {
+        el.clients[0].socket.send(
+          JSON.stringify({
+            event: "opponentLeave",
+          })
+        );
+      }
+    });
+    console.log(rooms);
+    console.log("CLOSE", reason);
+  });
 };
 
 const broadcastMessage = async (ws, msg) => {
-
-  console.log("SEND MSG", msg);
+  //console.log("SEND MSG", msg);
   rooms.forEach((el) => {
-    if (el.room === msg.room) {
+    if (el.clients === msg.room) {
       el.clients.forEach((client) => {
         if (client.name !== msg.name) {
           client.socket.send(JSON.stringify(msg));
@@ -28,11 +48,6 @@ const broadcastMessage = async (ws, msg) => {
     }
   });
 };
-
-// const createNewMessage = async (msg) => {
-//   const message = new Message(msg);
-//   await message.save();
-// };
 
 const broadcastConnection = (ws, msg) => {
   if (!rooms.filter((el) => el.room === msg.room).length) {
@@ -74,6 +89,15 @@ const broadcastConnection = (ws, msg) => {
               return { name: msg.name, socket: ws };
             }
             return client;
+          });
+        }
+        if (el.clients.length === 2) {
+          el.clients.forEach((client) => {
+            client.socket.send(
+              JSON.stringify({
+                event: "canStart",
+              })
+            );
           });
         }
       }
