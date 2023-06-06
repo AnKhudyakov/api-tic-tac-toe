@@ -1,3 +1,5 @@
+import { aWss } from "../index.js";
+
 let rooms = [];
 
 const connectionWS = async (ws, req) => {
@@ -15,8 +17,10 @@ const connectionWS = async (ws, req) => {
   });
   ws.on("close", (code, reason) => {
     //msg = JSON.parse(msg);
+    let clientsConnect = [];
+    aWss.clients.forEach((cl) => clientsConnect.push(cl.name));
     rooms.forEach((el) => {
-      el.clients = el.clients.filter((client) => client.name !== reason);
+      el.clients = el.clients.filter((client) => clientsConnect.includes(client.name));
       if (el.clients.length) {
         el.clients[0].socket.send(
           JSON.stringify({
@@ -24,8 +28,8 @@ const connectionWS = async (ws, req) => {
           })
         );
       }
+      console.log("CLOSE NOW ROOM", el);
     });
-    console.log("CLOSE", rooms);
   });
 };
 
@@ -43,6 +47,7 @@ const broadcastMessage = async (ws, msg) => {
 };
 
 const broadcastConnection = (ws, msg) => {
+  ws.name = msg.name;
   if (!rooms.filter((el) => el.room === msg.room).length) {
     //new room
     rooms.push({
