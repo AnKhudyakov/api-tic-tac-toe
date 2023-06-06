@@ -3,6 +3,7 @@ let rooms = [];
 const connectionWS = async (ws, req) => {
   ws.on("message", (msg) => {
     msg = JSON.parse(msg);
+    console.log(rooms);
     switch (msg.event) {
       case "message":
         broadcastMessage(ws, msg);
@@ -15,13 +16,6 @@ const connectionWS = async (ws, req) => {
   ws.on("close", (code, reason) => {
     //msg = JSON.parse(msg);
     rooms.forEach((el) => {
-      console.log(
-        "IF",
-        el.clients.filter((client) => {
-          console.log("NAME", client.name !== reason);
-          client.name !== reason;
-        })
-      );
       el.clients = el.clients.filter((client) => client.name !== reason);
       if (el.clients.length) {
         el.clients[0].socket.send(
@@ -31,15 +25,14 @@ const connectionWS = async (ws, req) => {
         );
       }
     });
-    console.log(rooms);
-    console.log("CLOSE", reason);
+    console.log("CLOSE", rooms);
   });
 };
 
 const broadcastMessage = async (ws, msg) => {
-  //console.log("SEND MSG", msg);
+  console.log("SEND MSG", msg);
   rooms.forEach((el) => {
-    if (el.clients === msg.room) {
+    if (el.room === msg.room) {
       el.clients.forEach((client) => {
         if (client.name !== msg.name) {
           client.socket.send(JSON.stringify(msg));
