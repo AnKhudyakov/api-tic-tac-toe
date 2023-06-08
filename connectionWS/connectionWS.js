@@ -5,7 +5,6 @@ let rooms = [];
 const connectionWS = async (ws, req) => {
   ws.on("message", (msg) => {
     msg = JSON.parse(msg);
-    console.log(rooms);
     switch (msg.event) {
       case "message":
         broadcastMessage(ws, msg);
@@ -16,11 +15,12 @@ const connectionWS = async (ws, req) => {
     }
   });
   ws.on("close", (code, reason) => {
-    //msg = JSON.parse(msg);
     let clientsConnect = [];
     aWss.clients.forEach((cl) => clientsConnect.push(cl.name));
     rooms.forEach((el) => {
-      el.clients = el.clients.filter((client) => clientsConnect.includes(client.name));
+      el.clients = el.clients.filter((client) =>
+        clientsConnect.includes(client.name)
+      );
       if (el.clients.length) {
         el.clients[0].socket.send(
           JSON.stringify({
@@ -28,7 +28,7 @@ const connectionWS = async (ws, req) => {
           })
         );
       }
-      console.log("CLOSE NOW ROOM", el);
+      console.log("CLOSE CLIENT, CURRENT ROOM", el);
     });
   });
 };
@@ -49,19 +49,15 @@ const broadcastMessage = async (ws, msg) => {
 const broadcastConnection = (ws, msg) => {
   ws.name = msg.name;
   if (!rooms.filter((el) => el.room === msg.room).length) {
-    //new room
     rooms.push({
       room: msg.room,
       clients: [{ name: msg.name, socket: ws }],
     });
     console.log("NEW ROOM CREATED");
   } else {
-    // exist room
     rooms.forEach((el) => {
-      //find room
       if (el.room === msg.room) {
         console.log("FIND ROOM", el);
-        //add new client
         if (
           !el.clients.filter((client) => client.name === msg.name).length &&
           el.clients.length < 2
@@ -80,7 +76,6 @@ const broadcastConnection = (ws, msg) => {
             })
           );
         } else {
-          // change exist client
           console.log("Client EXIST");
           el.clients = el.clients.map((client) => {
             if (client.name === msg.name) {
@@ -101,7 +96,6 @@ const broadcastConnection = (ws, msg) => {
       }
     });
   }
-  console.log("rooms", rooms);
 };
 
 export default connectionWS;
